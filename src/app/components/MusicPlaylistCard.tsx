@@ -1,15 +1,19 @@
-import React from "react";
-
 interface IMusicPlaylistCardProps {
+    id: number
     src: string,
     title: string,
     author?: string,
     description?: string,
+    onPlay: (id:number) => void;
 }
 
+
 export const MusicPlaylistCard:React.FC<IMusicPlaylistCardProps> = (props) => {
+
   return (
-    <div className="w-52 block justify-center h-64 rounded-lg bg-gray-900/60 hover:bg-gray-800/80 transition-all duration-300 ease-in-out shadow-lg hover:shadow-xl overflow-hidden relative group cursor-pointer">
+    <div className="w-52 block justify-center h-64 rounded-lg bg-gray-900/60 hover:bg-gray-800/80 transition-all duration-300 ease-in-out shadow-lg hover:shadow-xl overflow-hidden relative group cursor-pointer"
+    onClick={() => props.onPlay(props.id)}
+    >
       <a href="#" className="relative rounded-lg overflow-hidden">
         <img
           className="h-4/6 w-full object-center object-cover"

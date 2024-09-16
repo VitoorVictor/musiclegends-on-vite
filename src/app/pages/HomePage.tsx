@@ -3,18 +3,14 @@ import axios from "axios";
 import { MusicPlaylistCard } from "../components/MusicPlaylistCard";
 import { Navbar } from "../components/Navbar";
 import { Sidebar } from "../components/Sidebar";
-
-interface IMusicData {
-  id: number;
-  title: string;
-  artist: string;
-  image_path: string;
-  audio_path: string;
-}
+import Footer from "../components/Footer";
+import { IMusicData } from "../data";
 
 export const HomePage = () => {
   const [musics, setMusics] = useState<IMusicData[]>([]); // Estado para armazenar as músicas
   const background = 'url("/assets/background2.jpg")';
+  const [playSongOpen, setPlaySongOpen] = useState(false);
+  const [songId, setSongId] = useState<number>(0);
 
   // Função para buscar as músicas da API
    
@@ -30,9 +26,14 @@ export const HomePage = () => {
   // Usando useEffect para fazer a requisição quando o componente for montado
   useEffect(() => {
     fetchMusics();
-    console.log(musics);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handlePlay = (id: number) => {
+    setSongId(id);
+    setPlaySongOpen(true);
+    console.log(playSongOpen);
+    console.log(songId);
+  };
 
   return (
     <div
@@ -48,13 +49,20 @@ export const HomePage = () => {
           {musics.map((music) => (
             <MusicPlaylistCard
               key={music.id}
+              id={music.id}
               src={`http://127.0.0.1:8000/${music.image_path}`} // Caminho da imagem dinâmica
               title={music.title}
               author={music.artist}
+              onPlay={handlePlay}
             />
           ))}
         </main>
       </section>
+      {(playSongOpen) && ( 
+        <div className="absolute bottom-0">
+          <Footer songId={songId}/>
+        </div>
+      )}
     </div>
   );
 };

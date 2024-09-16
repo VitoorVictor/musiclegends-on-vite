@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 type FormDataState = {
-  title: string | null;
-  artist: string | null;
+  title: string ;
+  artist: string ;
   album?: string | null;
   genre?: string | null;
   image: File | null;
@@ -12,8 +14,8 @@ type FormDataState = {
 
 export const ModalCreateMusic: React.FC = () => {
   const [formData, setFormData] = useState<FormDataState>({
-    title: null,
-    artist: null,
+    title: '',
+    artist: '',
     album: null,
     genre: null,
     image: null,
@@ -24,24 +26,29 @@ export const ModalCreateMusic: React.FC = () => {
 
   // Função para lidar com o upload de imagem e criar a pré-visualização
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; // Acessa o primeiro arquivo selecionado, se existir
+    const file = e.target.files?.[0];
     if (file) {
-      // Verifica se o arquivo é uma imagem PNG, JPG ou JPEG
+      const maxLengthMB = 5 * 1024 * 1024;
+
       if (
-        file.type === "image/png" ||
-        file.type === "image/jpeg" ||
-        file.type === "image/jpg"
+        (file.type === "image/png" ||
+          file.type === "image/jpeg" ||
+          file.type === "image/jpg") &&
+        file.size < maxLengthMB
       ) {
         setFormData((prevState) => ({
           ...prevState,
           image: file,
         }));
-        setSelectedImage(URL.createObjectURL(file)); // Cria uma pré-visualização da imagem
+        setSelectedImage(URL.createObjectURL(file)); // Cria pré-visualização
+      } else if (file.size > maxLengthMB) {
+        toast.error("Selecione uma imagem com tamanho menor que 5MB");
       } else {
-        alert("Selecione uma imagem válida (PNG, JPG, JPEG)");
+        toast.error("Selecione uma imagem no formato PNG, JPG ou JPEG");
       }
     } else {
-      alert("Nenhum arquivo selecionado");
+      setSelectedImage(null); // Não exibe pré-visualização
+      toast.error("Nenhuma imagem foi selecionada");
     }
   };
 
@@ -54,7 +61,7 @@ export const ModalCreateMusic: React.FC = () => {
         audio: file,
       }));
     } else {
-      alert("Nenhum arquivo de áudio selecionado");
+      toast.error("Nenhum arquivo de áudio selecionado");
     }
   };
 
@@ -63,23 +70,46 @@ export const ModalCreateMusic: React.FC = () => {
     e.preventDefault();
 
     const data = new FormData();
+    let valid = true;
+
     if (formData.title) {
       data.append("title", formData.title);
+    } else {
+      valid = false;
+      toast.error("O campo título é obrigatório");
     }
+
     if (formData.artist) {
       data.append("artist", formData.artist);
+    } else {
+      valid = false;
+      toast.error("O campo artista é obrigatório");
     }
+
     if (formData.album) {
-        data.append("album", formData.album);
-      }
-      if (formData.genre) {
-        data.append("genre", formData.genre);
-      }
+      data.append("album", formData.album);
+    }
+
+    if (formData.genre) {
+      data.append("genre", formData.genre);
+    }
+
     if (formData.image) {
       data.append("image", formData.image);
+    } else {
+      valid = false;
+      toast.error("É necessário selecionar uma imagem");
     }
+
     if (formData.audio) {
       data.append("audio", formData.audio);
+    } else {
+      valid = false;
+      toast.error("É necessário selecionar um arquivo de áudio");
+    }//aqui coloque um toast
+    
+    if (!valid) {
+      return; // Para o envio se houver algum erro
     }
 
     try {
@@ -89,23 +119,31 @@ export const ModalCreateMusic: React.FC = () => {
         },
       });
 
-      if (response.status === 200 || response.status === 201 ) {
-        console.log("Upload bem-sucedido!");
+      if (response.status === 200 || response.status === 201) {
+        toast.success("Upload bem-sucedido!");
       } else {
-        console.log("Erro no upload.");
+        toast.error("Erro no upload.");
       }
+
     } catch (error) {
-        if (axios.isAxiosError(error)) {
-          // Tratamento para erros do Axios
-          console.log("Erro na resposta do servidor:", error.response?.data);
-          console.log("Status:", error.response?.status);
-          console.log("Headers:", error.response?.headers);
-        } else {
-          // Tratamento para outros tipos de erros (se houver)
-          console.log("Erro desconhecido:", (error as Error).message);
-        }
+      if (axios.isAxiosError(error)) {
+        console.log("Erro na resposta do servidor:", error.response?.data);
+        toast.error("Erro na resposta do servidor");
+      } else {
+        toast.error("Erro desconhecido");
       }
+    
+      setFormData({
+        title: '',
+        artist: '',
+        album: null,
+        genre: null,
+        image: null,
+        audio: null,
+      });
+      setSelectedImage(null);}
   };
+
 
   return (
         <div
@@ -114,7 +152,7 @@ export const ModalCreateMusic: React.FC = () => {
             className="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full"
           >
             <div className="relative p-4 w-full max-w-96 max-h-full">
-              <div className="relative bg-white rounded-lg shadow bg-gray-800">
+              <div className="relative rounded-lg shadow bg-gray-800">
                 <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                     Criar Nova Música
@@ -163,6 +201,7 @@ export const ModalCreateMusic: React.FC = () => {
                         accept="image/png, image/jpeg, image/jpg"
                         onChange={handleImageChange}
                         className="hidden"
+                        required
                       />
                         </div>
                         <div className="flex justify-center items-center text-cente">
@@ -178,6 +217,7 @@ export const ModalCreateMusic: React.FC = () => {
                             accept="audio/*" // Aceita todos os tipos de arquivos de áudio
                             className="hidden"
                             onChange={handleAudioChange}
+                            required
                         />
                         </div>
                   </div>
@@ -202,7 +242,14 @@ export const ModalCreateMusic: React.FC = () => {
                           id="title"
                           placeholder="Título"
                           className="h-8 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-md placeholder:text-sm block w-full p-1.5"
-                          onChange={(e) => formData.title = e.target.value}
+                          onChange={(e) =>
+                            setFormData((prevState) => ({
+                              ...prevState,
+                              title: e.target.value,
+                            }))
+                          }
+                          value={formData.title}
+                          required
                         />
                       </div>
                       <div className="mt-2">
@@ -212,15 +259,25 @@ export const ModalCreateMusic: React.FC = () => {
                           id="artist"
                           placeholder="Artista"
                           className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-md  placeholder:text-sm block w-full p-1.5"
-                          onChange={(e) => formData.artist = e.target.value}
+                          onChange={(e) =>
+                            setFormData((prevState) => ({
+                              ...prevState,
+                              artist: e.target.value,
+                            }))
+                          }
+                          value={formData.artist}
+                          required
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600">
+                  <div className="mt-5 text-white">
+                      ola a
+                  </div>
+
+                  <div className="flex items-center p-4 md:p-5 border-t rounded-b dark:border-gray-600">
                     <button
-                      data-modal-hide="default-modal"
                       type="submit"
                       className="text-white bg-brand-color hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:focus:ring-blue-800"
                     >
@@ -230,6 +287,10 @@ export const ModalCreateMusic: React.FC = () => {
                 </form>
               </div>
             </div>
+
+            {/* Contêiner para o Toastify */}
+            <ToastContainer />
+
           </div>
     )
 
